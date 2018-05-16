@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
             this.imageView = imageView;
         }
 
+        @Override
         protected Bitmap doInBackground(String... urls) {
             Bitmap logo = null;
 
@@ -57,10 +58,10 @@ public class MainActivity extends AppCompatActivity {
             } catch (IOException ioe) {  // Catch the download exception
                 Log.e(TAG, ioe.toString());
             }
-
             return logo;
         }
 
+        @Override
         protected void onPostExecute(Bitmap result) {
             imageView.setImageBitmap(result);
         }

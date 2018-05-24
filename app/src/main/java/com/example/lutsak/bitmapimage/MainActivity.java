@@ -16,22 +16,30 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String IMAGE_URL = "https://www.google.com/images/srpr/logo11w.png";
 
-    ImageView imageView;
+    private ImageView mImageView;
+    private DownLoadImageTask mLoadImageTask;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Log.d(TAG, ">> MainActivity");
+        Log.d(TAG, ">> onCreate");
 
-        imageView = findViewById(R.id.image_view);
+        mImageView = findViewById(R.id.image_view);
 
         /*
           Download the logo from online and set it as
           ImageView image programmatically.
          */
-        new DownLoadImageTask(imageView).execute(IMAGE_URL);
+        mLoadImageTask = new DownLoadImageTask(mImageView);
+        mLoadImageTask.execute(IMAGE_URL);
 
-        Log.d(TAG, "<< MainActivity");
+        Log.d(TAG, "<< onCreate ");
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        mLoadImageTask.cancel(true);
     }
 
     /*
@@ -39,8 +47,8 @@ public class MainActivity extends AppCompatActivity {
       allows to perform background operations and publish results on the UI
       thread without having to manipulate threads and/or handlers.
      */
-    private class DownLoadImageTask extends AsyncTask<String, Void, Bitmap> {
-        ImageView imageView;
+    private static class DownLoadImageTask extends AsyncTask<String, Void, Bitmap> {
+        private ImageView imageView;
 
         DownLoadImageTask(ImageView imageView) {
             this.imageView = imageView;
@@ -64,7 +72,12 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Bitmap result) {
-            imageView.setImageBitmap(result);
+            try {
+                imageView.setImageBitmap(result);
+            }
+            catch (Exception ex){  //handle null image with default one
+                imageView.setImageResource(R.drawable.ic_launcher_background);
+            }
         }
     }
 }

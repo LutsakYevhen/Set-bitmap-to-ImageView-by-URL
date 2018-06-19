@@ -2,24 +2,22 @@ package com.example.lutsak.bitmapimage;
 
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ImageView;
-import java.io.IOException;
-import java.net.URL;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements DownloadImageTask.DownLoadImageTaskProtocol {
 
-    public static final String TAG = MainActivity.class.getSimpleName();
-    public static final String IMAGE_URL = "https://www.alcopa-auction.fr/assets/img/brand-volkswagen.png";
+    private static final String TAG = MainActivity.class.getSimpleName();
+
+    private static final String IMAGE_URL = "https://www.alcopa-auction.fr/assets/img/brand-volkswagen.png";
     private static final int HALF_SCREEN_WIDTH = Resources.getSystem().getDisplayMetrics().widthPixels / 2;
     private static final int HALF_SCREEN_HEIGHT = Resources.getSystem().getDisplayMetrics().heightPixels / 2;
 
     private ImageView mImageView;
-    private DownLoadImageTask mLoadImageTask;
+    private DownloadImageTask mLoadImageTask;
+    private Bitmap mBitmap;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,83 +30,48 @@ public class MainActivity extends AppCompatActivity {
           Download the logo from online and set it as
           ImageView image programmatically.
          */
-        mLoadImageTask = (DownLoadImageTask) getLastCustomNonConfigurationInstance();
-        if (mLoadImageTask == null) {
-            Log.d(TAG, "create");
-            mLoadImageTask = new DownLoadImageTask();
-            mLoadImageTask.execute(IMAGE_URL);
-        }
-        mLoadImageTask.link(this);
+        mBitmap = (Bitmap) getLastCustomNonConfigurationInstance();
+        Log.d(TAG, "onCreate, mBitmap " + mBitmap);
 
+        if(mBitmap != null){
+            mImageView.setImageBitmap(mBitmap);
+        } else {
+            mLoadImageTask = new DownloadImageTask(IMAGE_URL, HALF_SCREEN_WIDTH, HALF_SCREEN_HEIGHT);
+            mLoadImageTask.execute(IMAGE_URL);
+            mLoadImageTask.setProtocol(this);
+        }
         Log.d(TAG, "<< onCreate ");
     }
 
-    public Object onRetainCustomNonConfigurationInstance() {
-       mLoadImageTask.unLink();
-        return mLoadImageTask;
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.d(TAG, "onStop ");
+
+        if (mLoadImageTask != null) {
+            mLoadImageTask.removeProtocol();
+            mLoadImageTask.cancel(false);
+        }
     }
 
-    /*
-      AsyncTask enables proper and easy use of the UI thread. This class
-      allows to perform background operations and publish results on the UI
-      thread without having to manipulate threads and/or handlers.
-     */
-    private static class DownLoadImageTask extends AsyncTask<String, Void, Bitmap> {
-        private MainActivity mActivity;
+    @Override
+    public Object onRetainCustomNonConfigurationInstance() {
+       Log.d(TAG, "onRetainCustomNonConfigurationInstance :");
+        return mBitmap;
+    }
 
+    @Override
+    public void onImageDownloaded(Bitmap bitmap) {
+        Log.d(TAG, "onImageDownloaded");
+        mBitmap = bitmap;
+        mImageView.setImageBitmap(bitmap);
+    }
 
-        void link(MainActivity act) {
-            mActivity = act;
-        }
-
-        void unLink() {
-            mActivity = null;
-        }
-
-        private static Bitmap resize(Bitmap image, int maxWidth, int maxHeight) {
-            if (maxHeight > 0 && maxWidth > 0) {
-                float ratioBitmap = (float) image.getWidth() / (float) image.getHeight();
-                float ratioMax = (float) maxWidth / (float) maxHeight;
-
-                int finalWidth = maxWidth;
-                int finalHeight = maxHeight;
-                if (ratioMax > ratioBitmap) {
-                    finalWidth = (int) ((float)maxHeight * ratioBitmap);
-                } else {
-                    finalHeight = (int) ((float)maxWidth / ratioBitmap);
-                }
-                image = Bitmap.createScaledBitmap(image, finalWidth, finalHeight, true);
-                return image;
-            } else {
-                return image;
-            }
-        }
-
-        @Override
-        protected Bitmap doInBackground(String... urls) {
-            Bitmap logo = null;
-            try {
-                /*
-                  decodeStream(InputStream)
-                  Decode an input stream into a bitmap.
-                 */
-                logo = BitmapFactory.decodeStream(new URL(IMAGE_URL).openStream());
-                logo = resize(logo, HALF_SCREEN_WIDTH, HALF_SCREEN_HEIGHT);
-            } catch (IOException ioe) {  // Catch the download exception
-                Log.e(TAG, ioe.toString());
-            }
-            return logo;
-        }
-
-        @Override
-        protected void onPostExecute(Bitmap result) {
-            try {
-                mActivity.mImageView.setImageBitmap(result);
-            }
-            catch (Exception ex){  //handle null image with default one
-                mActivity.mImageView.setImageResource(R.drawable.ic_launcher_background);
-            }
-        }
+    @Override
+    public void onImageDownloadFailed() {
+        Log.d(TAG, "onImageDownloadFailed");
+        mImageView.setImageResource(R.drawable.ic_launcher_background);
     }
 }
 

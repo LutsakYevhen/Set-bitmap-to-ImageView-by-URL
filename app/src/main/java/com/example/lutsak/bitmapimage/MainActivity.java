@@ -2,10 +2,14 @@ package com.example.lutsak.bitmapimage;
 
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.LruCache;
 import android.widget.ImageView;
+
+import java.io.File;
 
 public class MainActivity extends AppCompatActivity implements DownloadImageTask.DownLoadImageTaskProtocol {
 
@@ -15,9 +19,13 @@ public class MainActivity extends AppCompatActivity implements DownloadImageTask
     private static final int HALF_SCREEN_WIDTH = Resources.getSystem().getDisplayMetrics().widthPixels / 2;
     private static final int HALF_SCREEN_HEIGHT = Resources.getSystem().getDisplayMetrics().heightPixels / 2;
 
+    private final int mMaxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024); // Stored in kilobytes.
+    private final int mCacheSize = mMaxMemory / 2; //Use 1/8 of all available memory for cache.
+    private LruCache<String,Bitmap> mMemoryCache = new LruCache<String, Bitmap>(mCacheSize);
+    private final File path = Environment.getDataDirectory();
+
     private ImageView mImageView;
     private DownloadImageTask mLoadImageTask;
-    private Bitmap mBitmap;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -26,20 +34,8 @@ public class MainActivity extends AppCompatActivity implements DownloadImageTask
 
         mImageView = findViewById(R.id.image_view);
 
-        /*
-          Download the logo from online and set it as
-          ImageView image programmatically.
-         */
-        mBitmap = (Bitmap) getLastCustomNonConfigurationInstance();
-        Log.d(TAG, "onCreate, mBitmap " + mBitmap);
+        loadImage(IMAGE_URL, mImageView);
 
-        if(mBitmap != null){
-            mImageView.setImageBitmap(mBitmap);
-        } else {
-            mLoadImageTask = new DownloadImageTask(IMAGE_URL, HALF_SCREEN_WIDTH, HALF_SCREEN_HEIGHT);
-            mLoadImageTask.execute(IMAGE_URL);
-            mLoadImageTask.setProtocol(this);
-        }
         Log.d(TAG, "<< onCreate ");
     }
 
@@ -56,22 +52,42 @@ public class MainActivity extends AppCompatActivity implements DownloadImageTask
     }
 
     @Override
-    public Object onRetainCustomNonConfigurationInstance() {
-       Log.d(TAG, "onRetainCustomNonConfigurationInstance :");
-        return mBitmap;
-    }
-
-    @Override
     public void onImageDownloaded(Bitmap bitmap) {
         Log.d(TAG, "onImageDownloaded");
-        mBitmap = bitmap;
-        mImageView.setImageBitmap(bitmap);
+        addBitmapToMemoryCache(IMAGE_URL, bitmap);
     }
 
     @Override
     public void onImageDownloadFailed() {
         Log.d(TAG, "onImageDownloadFailed");
         mImageView.setImageResource(R.drawable.ic_launcher_background);
+    }
+
+    private void addBitmapToMemoryCache(String key, Bitmap bitmap) {
+        Log.d(TAG, "addBitmapToMemoryCache");
+        if (getBitmapFromMemCache(key) == null) {
+            Log.d(TAG, "put bitmap");
+            mMemoryCache.put(key, bitmap);
+        }
+        loadImage(key, mImageView);
+    }
+
+    private Bitmap getBitmapFromMemCache(String key) {
+        Log.d(TAG, "getBitmapFromMemCache");
+        return mMemoryCache.get(key);
+    }
+
+    private void loadImage (String key, ImageView imageView){
+        Log.d(TAG, "loadImage");
+        final Bitmap bitmap = getBitmapFromMemCache(key);
+        Log.d(TAG, "bitmap getBitmapFromMemCache : " + bitmap);
+        if (bitmap != null){
+            imageView.setImageBitmap(bitmap);
+        } else {
+            mLoadImageTask = new DownloadImageTask(key, HALF_SCREEN_WIDTH, HALF_SCREEN_HEIGHT);
+            mLoadImageTask.execute(key);
+            mLoadImageTask.setProtocol(this);
+        }
     }
 }
 

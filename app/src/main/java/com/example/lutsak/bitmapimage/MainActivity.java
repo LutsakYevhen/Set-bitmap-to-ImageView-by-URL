@@ -2,14 +2,11 @@ package com.example.lutsak.bitmapimage;
 
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.LruCache;
 import android.widget.ImageView;
-
-import java.io.File;
 
 public class MainActivity extends AppCompatActivity implements DownloadImageTask.DownLoadImageTaskProtocol {
 
@@ -21,8 +18,7 @@ public class MainActivity extends AppCompatActivity implements DownloadImageTask
 
     private final int mMaxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024); // Stored in kilobytes.
     private final int mCacheSize = mMaxMemory / 2; //Use 1/8 of all available memory for cache.
-    private LruCache<String,Bitmap> mMemoryCache = new LruCache<String, Bitmap>(mCacheSize);
-    private final File path = Environment.getDataDirectory();
+    private LruCache<String,Bitmap> mMemoryCache;
 
     private ImageView mImageView;
     private DownloadImageTask mLoadImageTask;
@@ -33,6 +29,13 @@ public class MainActivity extends AppCompatActivity implements DownloadImageTask
         Log.d(TAG, ">> onCreate");
 
         mImageView = findViewById(R.id.image_view);
+
+        RetainFragment retainFragment = RetainFragment.findOrCreateRetainFragment(getFragmentManager());
+        mMemoryCache = retainFragment.mRetainedCache;
+        if (mMemoryCache == null) {
+            mMemoryCache = new LruCache<String, Bitmap>(mCacheSize);
+            retainFragment.mRetainedCache = mMemoryCache;
+        }
 
         loadImage(IMAGE_URL, mImageView);
 

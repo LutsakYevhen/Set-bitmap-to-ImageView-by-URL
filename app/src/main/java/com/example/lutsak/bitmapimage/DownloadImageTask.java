@@ -24,7 +24,7 @@ public class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
 
     private DownLoadImageTaskProtocol mProtocol;
 
-    public DownloadImageTask(String linkToImage, int desiredImageWidth, int desiredImageHeight){
+    DownloadImageTask(String linkToImage, int desiredImageWidth, int desiredImageHeight){
         mLinkToImage = linkToImage;
         mDesiredImageWidth = desiredImageWidth;
         mDesiredImageHeight = desiredImageHeight;

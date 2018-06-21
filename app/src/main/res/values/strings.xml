@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Bitmap Image</string>
+    <string name="image_url">https://www.alcopa-auction.fr/assets/img/brand-volkswagen.png</string>
 </resources>

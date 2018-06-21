@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity implements DownloadImageTask
         RetainFragment retainFragment = RetainFragment.findOrCreateRetainFragment(getFragmentManager());
         mMemoryCache = retainFragment.mRetainedCache;
         if (mMemoryCache == null) {
-            mMemoryCache = new LruCache<String, Bitmap>(mCacheSize);
+            mMemoryCache = new LruCache<>(mCacheSize);
             retainFragment.mRetainedCache = mMemoryCache;
         }
 
@@ -72,6 +72,7 @@ public class MainActivity extends AppCompatActivity implements DownloadImageTask
             Log.d(TAG, "put bitmap");
             mMemoryCache.put(key, bitmap);
         }
+        RetainFragment.saveState(bitmap);
         loadImage(key, mImageView);
     }
 

@@ -9,6 +9,8 @@ import android.util.LruCache;
 import android.widget.ImageView;
 
 public class MainActivity extends AppCompatActivity implements DownloadImageTask.DownLoadImageTaskProtocol {
+    
+    private static String Hi = "Де там можна буде припаркуватися?, і напиши тут адрес ресторану бо ми шось запутались.";
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
